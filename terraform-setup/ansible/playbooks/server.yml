@@ -115,7 +115,7 @@
 
     - name: Add the SSH user to the docker group
       ansible.builtin.user:
-        name: "{{ ansible_user_id }}"
+        name: "{{ ansible_facts['user_id'] }}"
         groups: docker
         append: true
 

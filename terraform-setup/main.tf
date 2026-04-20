@@ -18,7 +18,7 @@ resource "aws_key_pair" "this" {
 
 resource "local_sensitive_file" "private_key_pem" {
   content         = tls_private_key.ssh.private_key_pem
-  filename        = "${path.module}/${var.key_name}.pem"
+  filename        = local.private_key_path
   file_permission = "0600"
 }
 
@@ -35,6 +35,10 @@ locals {
       service_port = 9000
     }
   }
+}
+
+locals {
+  private_key_path = "${path.module}/${var.key_name}.pem"
 }
 
 resource "aws_security_group" "this" {
@@ -99,33 +103,32 @@ resource "local_file" "ansible_inventory" {
   count = var.provision_with_ansible ? 1 : 0
 
   content = templatefile("${path.module}/templates/inventory.ini.tftpl", {
-    jenkins_host   = aws_instance.this["jenkins"].public_ip
-    sonarqube_host = aws_instance.this["sonarqube"].public_ip
-    ssh_user       = var.ssh_user
+    jenkins_host     = aws_instance.this["jenkins"].public_ip
+    sonarqube_host   = aws_instance.this["sonarqube"].public_ip
+    ssh_user         = var.ssh_user
+    private_key_path = local.private_key_path
   })
 
   filename = "${path.module}/ansible/inventory.ini"
 }
 
 resource "null_resource" "wait_for_cloud_init" {
-  for_each = var.provision_with_ansible ? local.instances : {}
+  for_each = aws_instance.this
 
   triggers = {
-    instance_id = aws_instance.this[each.key].id
+    instance_id = each.value.id
   }
 
   connection {
     type        = "ssh"
-    host        = aws_instance.this[each.key].public_ip
+    host        = each.value.public_ip
     user        = var.ssh_user
-    private_key = tls_private_key.ssh.private_key_pem
+    private_key = file(local.private_key_path)
     timeout     = "5m"
   }
 
   provisioner "remote-exec" {
-    inline = [
-      "cloud-init status --wait || true",
-    ]
+    inline = ["cloud-init status --wait || true"]
   }
 }
 
@@ -134,15 +137,16 @@ resource "null_resource" "ansible_provision" {
 
   depends_on = [
     local_file.ansible_inventory,
-    null_resource.wait_for_cloud_init,
+    null_resource.wait_for_cloud_init
   ]
 
-  triggers = {
-    jenkins_instance_id   = aws_instance.this["jenkins"].id
-    sonarqube_instance_id = aws_instance.this["sonarqube"].id
-  }
-
   provisioner "local-exec" {
-    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook --private-key ${local_sensitive_file.private_key_pem.filename} -i ${local_file.ansible_inventory[0].filename} ${path.module}/ansible/playbooks/server.yml"
+    command = <<EOT
+ANSIBLE_HOST_KEY_CHECKING=False \
+ansible-playbook \
+--private-key ${local.private_key_path} \
+-i ${path.module}/ansible/inventory.ini \
+${path.module}/ansible/playbooks/server.yml
+EOT
   }
 }
