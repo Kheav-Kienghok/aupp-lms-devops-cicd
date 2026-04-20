@@ -1,0 +1,6 @@
+#cloud-config
+hostname: ${hostname}
+package_update: true
+package_upgrade: false
+runcmd:
+  - [bash, -lc, "echo 'cloud-init finished at $(date -Iseconds)' > /var/log/cloud-init-custom.log"]

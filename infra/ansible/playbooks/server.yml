@@ -1,0 +1,70 @@
+---
+- name: Configure server with Docker and Docker Compose
+  hosts: servers
+  become: true
+  gather_facts: true
+
+  pre_tasks:
+    - name: Wait for cloud-init to finish when available
+      ansible.builtin.shell: |
+        if command -v cloud-init >/dev/null 2>&1; then
+          cloud-init status --wait
+        fi
+      changed_when: false
+
+    - name: Update apt packages
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: dist
+      when: ansible_facts.os_family == "Debian"
+
+    - name: Update dnf packages
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+        update_only: true
+      when: ansible_facts.os_family == "RedHat"
+
+  tasks:
+    - name: Install curl on Debian
+      ansible.builtin.apt:
+        name: curl
+        state: present
+      when: ansible_facts.os_family == "Debian"
+
+    - name: Install curl on RedHat
+      ansible.builtin.dnf:
+        name: curl
+        state: present
+      when: ansible_facts.os_family == "RedHat"
+
+    - name: Install Docker using official convenience script
+      ansible.builtin.shell: |
+        curl -fsSL https://get.docker.com | sh
+      args:
+        creates: /usr/bin/docker
+
+    - name: Ensure docker service is enabled and running
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Install docker compose plugin on Debian
+      ansible.builtin.apt:
+        name: docker-compose-plugin
+        state: present
+      when: ansible_facts.os_family == "Debian"
+
+    - name: Install docker compose plugin on RedHat
+      ansible.builtin.dnf:
+        name: docker-compose-plugin
+        state: present
+      when: ansible_facts.os_family == "RedHat"
+      ignore_errors: true
+
+    - name: Verify docker compose is available
+      ansible.builtin.command: docker compose version
+      register: docker_compose_check
+      changed_when: false
+      failed_when: docker_compose_check.rc != 0
