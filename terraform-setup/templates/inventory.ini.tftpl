@@ -1,5 +1,5 @@
 [jenkins]
-jenkins ansible_host=${jenkins_host} ansible_user=${ssh_user} ansible_ssh_private_key_file=${private_key_path} ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+jenkins ansible_host=${jenkins_host} ansible_user=${ssh_user} ansible_ssh_private_key_file=${private_key_path} ansible_python_interpreter=/usr/bin/python3 ansible_ssh_common_args='-o StrictHostKeyChecking=no'
 
 [sonarqube]
-sonarqube ansible_host=${sonarqube_host} ansible_user=${ssh_user} ansible_ssh_private_key_file=${private_key_path} ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+sonarqube ansible_host=${sonarqube_host} ansible_user=${ssh_user} ansible_ssh_private_key_file=${private_key_path} ansible_python_interpreter=/usr/bin/python3 ansible_ssh_common_args='-o StrictHostKeyChecking=no'
