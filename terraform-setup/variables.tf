@@ -5,7 +5,12 @@ variable "aws_region" {
 }
 
 variable "key_name" {
-  description = "Existing AWS key pair name"
+  description = "Name for the AWS key pair to create"
+  type        = string
+}
+
+variable "ami_id" {
+  description = "AMI ID to use for EC2 instances (set an AMI allowed by your organization policies)"
   type        = string
 }
 
@@ -15,14 +20,9 @@ variable "my_ip_cidr" {
 }
 
 variable "ssh_user" {
-  description = "SSH user for the Ubuntu AMI"
+  description = "SSH user for the selected AMI"
   type        = string
   default     = "ubuntu"
-}
-
-variable "private_key_path" {
-  description = "Path to the SSH private key that matches key_name"
-  type        = string
 }
 
 variable "instance_type" {

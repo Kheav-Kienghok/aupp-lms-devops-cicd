@@ -2,6 +2,26 @@ provider "aws" {
   region = var.aws_region
 }
 
+resource "tls_private_key" "ssh" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "aws_key_pair" "this" {
+  key_name   = var.key_name
+  public_key = tls_private_key.ssh.public_key_openssh
+
+  tags = {
+    Name = var.key_name
+  }
+}
+
+resource "local_sensitive_file" "private_key_pem" {
+  content         = tls_private_key.ssh.private_key_pem
+  filename        = "${path.module}/${var.key_name}.pem"
+  file_permission = "0600"
+}
+
 locals {
   instances = {
     jenkins = {
@@ -14,31 +34,6 @@ locals {
       hostname     = "sonarqube"
       service_port = 9000
     }
-  }
-}
-
-data "aws_ami" "ubuntu" {
-  owners      = ["099720109477"]
-  most_recent = true
-
-  filter {
-    name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-*-amd64-server-*"]
-  }
-
-  filter {
-    name   = "architecture"
-    values = ["x86_64"]
-  }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
-
-  filter {
-    name   = "root-device-type"
-    values = ["ebs"]
   }
 }
 
@@ -79,9 +74,9 @@ resource "aws_security_group" "this" {
 resource "aws_instance" "this" {
   for_each = local.instances
 
-  ami                         = data.aws_ami.ubuntu.id
+  ami                         = var.ami_id
   instance_type               = var.instance_type
-  key_name                    = var.key_name
+  key_name                    = aws_key_pair.this.key_name
   vpc_security_group_ids      = [aws_security_group.this[each.key].id]
   user_data_replace_on_change = true
 
@@ -123,7 +118,7 @@ resource "null_resource" "wait_for_cloud_init" {
     type        = "ssh"
     host        = aws_instance.this[each.key].public_ip
     user        = var.ssh_user
-    private_key = file(var.private_key_path)
+    private_key = tls_private_key.ssh.private_key_pem
     timeout     = "5m"
   }
 
@@ -148,6 +143,6 @@ resource "null_resource" "ansible_provision" {
   }
 
   provisioner "local-exec" {
-    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook --private-key ${var.private_key_path} -i ${local_file.ansible_inventory[0].filename} ${path.module}/ansible/playbooks/server.yml"
+    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook --private-key ${local_sensitive_file.private_key_pem.filename} -i ${local_file.ansible_inventory[0].filename} ${path.module}/ansible/playbooks/server.yml"
   }
 }
