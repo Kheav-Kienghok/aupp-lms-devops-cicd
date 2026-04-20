@@ -1,7 +1,7 @@
 variable "aws_region" {
   description = "AWS region for infrastructure deployment"
   type        = string
-  default = "ap-southeast-1"
+  default     = "ap-southeast-1"
 }
 
 variable "name_prefix" {
@@ -13,7 +13,7 @@ variable "name_prefix" {
 variable "instance_type" {
   description = "EC2 instance size"
   type        = string
-  default = "t2.micro"
+  default     = "t2.micro"
 }
 
 variable "ami_id" {

@@ -1,0 +1,31 @@
+.PHONY: install-terraform terraform-download terraform-extract terraform-verify help
+
+TERRAFORM_VERSION := 1.14.3
+TERRAFORM_URL := https://releases.hashicorp.com/terraform/$(TERRAFORM_VERSION)/terraform_$(TERRAFORM_VERSION)_linux_amd64.zip
+TERRAFORM_ZIP := terraform_$(TERRAFORM_VERSION)_linux_amd64.zip
+
+help:
+	@echo "Terraform Installation Targets:"
+	@echo "  make install-terraform   - Install Terraform (runs all steps)"
+	@echo "  make terraform-download  - Download Terraform binary"
+	@echo "  make terraform-extract   - Extract Terraform binary to /usr/local/bin/"
+	@echo "  make terraform-verify    - Verify Terraform installation"
+
+install-terraform: terraform-download terraform-extract terraform-verify
+	@echo "✓ Terraform installation completed successfully"
+
+terraform-download:
+	@echo "Downloading Terraform $(TERRAFORM_VERSION)..."
+	sudo wget $(TERRAFORM_URL)
+	@echo "✓ Download complete"
+
+terraform-extract:
+	@echo "Extracting Terraform binary..."
+	sudo unzip $(TERRAFORM_ZIP) -d /usr/local/bin/
+	@echo "✓ Terraform extracted to /usr/local/bin/"
+	@rm -f $(TERRAFORM_ZIP)
+
+terraform-verify:
+	@echo "Verifying Terraform installation..."
+	@terraform --version
+	@echo "✓ Terraform is ready"

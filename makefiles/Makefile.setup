@@ -1,0 +1,24 @@
+.PHONY: help terraform-setup
+
+ROOT_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/..)
+
+help:
+	@echo ""
+	@echo "Makefile.setup"
+	@echo "========================================"
+	@echo ""
+	@echo "Targets:"
+	@echo "  make -f makefiles/Makefile.setup terraform-setup"
+	@echo ""
+
+terraform-setup:
+	@echo ""
+	@echo "========================================"
+	@echo " Running terraform init + apply"
+	@echo "========================================"
+	@echo ""
+	@cd $(ROOT_DIR)/terraform-setup && terraform init
+	@cd $(ROOT_DIR)/terraform-setup && terraform apply --auto-approve
+	@echo ""
+	@echo "Terraform apply completed"
+	@echo ""

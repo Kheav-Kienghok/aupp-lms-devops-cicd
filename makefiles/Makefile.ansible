@@ -1,0 +1,30 @@
+.PHONY: install-ansible ansible-update ansible-install-deps ansible-add-ppa ansible-install help
+
+help:
+	@echo "Ansible Installation Targets:"
+	@echo "  make install-ansible    - Install Ansible (runs all steps)"
+	@echo "  make ansible-update     - Update apt packages"
+	@echo "  make ansible-install-deps - Install software-properties-common"
+	@echo "  make ansible-add-ppa    - Add Ansible PPA repository"
+	@echo "  make ansible-install    - Install Ansible package"
+
+install-ansible: ansible-update ansible-install-deps ansible-add-ppa ansible-install
+	@echo "✓ Ansible installation completed successfully"
+
+ansible-update:
+	@echo "Updating apt packages..."
+	sudo apt update -y
+
+ansible-install-deps:
+	@echo "Installing software-properties-common..."
+	sudo apt install software-properties-common -y
+
+ansible-add-ppa:
+	@echo "Adding Ansible PPA repository..."
+	sudo add-apt-repository --yes --update ppa:ansible/ansible
+
+ansible-install:
+	@echo "Installing Ansible..."
+	sudo apt install ansible -y
+	@echo "✓ Ansible installed"
+	@ansible --version
