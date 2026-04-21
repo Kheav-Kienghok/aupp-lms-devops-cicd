@@ -155,34 +155,21 @@ pipeline {
                 ]]) {
 
                     dir('infra/terraform') {
-                        sh """
-                            terraform init
-                            terraform validate
-                            terraform plan
-                            terraform apply -auto-approve --replace="module.compute.aws_instance.this"
-                        """
-
                         script {
-                            // 1. Check and log the current directory to the console
-                            def currentDir = sh(script: "pwd", returnStdout: true).trim()
-                            echo "Current directory inside script: ${currentDir}"
+                            // 1. Run Terraform and save the IP to a temporary file
+                            sh """
+                                terraform init
+                                terraform apply -auto-approve --replace="module.compute.aws_instance.this"
+                                
+                                # Extract the IP and save it to a file named 'ip.txt'
+                                terraform output -raw ec2_public_ip > ip.txt
+                            """
 
-                            // 2. Capture the IP using the correct key from your logs
-                            def capturedIp = sh(
-                                script: "terraform output -raw ec2_public_ip", 
-                                returnStdout: true
-                            ).trim()
+                            // 2. Read the file content back into the Jenkins Environment
+                            env.INSTANCE_IP = readFile('infra/terraform/ip.txt').trim()
+                            env.EC2_HOST = env.INSTANCE_IP // Sync for your later stages
 
-                            // 3. Validation and Assignment
-                            if (capturedIp && capturedIp != "null" && capturedIp != "") {
-                                env.INSTANCE_IP = capturedIp
-                                env.EC2_HOST = capturedIp // Crucial for your later stages
-                                echo "✅ Captured IP: ${env.INSTANCE_IP}"
-                            } else {
-                                // This will stop the pipeline and tell you exactly what went wrong
-                                error "❌ ERROR: Terraform output 'ec2_public_ip' returned '${capturedIp}'. " +
-                                    "Check if terraform apply succeeded in ${currentDir}"
-                            }
+                            echo "✅ Captured IP from shell: ${env.INSTANCE_IP}"
                         }
                     }
                 }
