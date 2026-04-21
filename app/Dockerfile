@@ -1,11 +1,11 @@
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm AS builder
+FROM ghcr.io/astral-sh/uv:python3.13-bookworm AS builder
 
 WORKDIR /app
 
 COPY . /app
 RUN uv sync --frozen --no-dev
 
-FROM python:3.12-slim AS runtime
+FROM python:3.13-slim-bookworm AS runtime
 
 WORKDIR /app
 
@@ -13,6 +13,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     APP_ENV=prod \
     PATH="/app/.venv/bin:$PATH"
+
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN useradd --create-home --uid 10001 appuser
 
