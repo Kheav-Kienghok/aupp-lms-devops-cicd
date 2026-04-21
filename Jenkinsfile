@@ -122,14 +122,44 @@ pipeline {
                 ]]) {
                     dir('infra/terraform') {
                         script {
-                            def ec2PublicIp = sh(
-                                script: 'terraform output -raw ec2_public_ip',
-                                returnStdout: true
-                            ).trim()
+                            def ec2PublicIp = ''
+                            def ec2InstanceId = ''
 
-                            if (!ec2PublicIp) {
-                                sh 'terraform output'
-                                error('Terraform output ec2_public_ip is empty.')
+                            // Fresh state can be briefly unavailable right after apply; retry first.
+                            retry(6) {
+                                ec2PublicIp = sh(
+                                    script: 'terraform output -raw ec2_public_ip',
+                                    returnStdout: true
+                                ).trim()
+
+                                if (!ec2PublicIp || ec2PublicIp == 'null') {
+                                    echo 'ec2_public_ip not ready yet, retrying in 10s...'
+                                    sleep(time: 10, unit: 'SECONDS')
+                                    error('retry ec2_public_ip')
+                                }
+                            }
+
+                            if (!ec2PublicIp || ec2PublicIp == 'null') {
+                                ec2InstanceId = sh(
+                                    script: 'terraform output -raw ec2_instance_id',
+                                    returnStdout: true
+                                ).trim()
+
+                                if (ec2InstanceId && ec2InstanceId != 'null') {
+                                    ec2PublicIp = sh(
+                                        script: "aws ec2 describe-instances --instance-ids ${ec2InstanceId} --region ${AWS_DEFAULT_REGION} --query 'Reservations[0].Instances[0].PublicIpAddress' --output text 2>/dev/null || true",
+                                        returnStdout: true
+                                    ).trim()
+
+                                    if (ec2PublicIp == 'None') {
+                                        ec2PublicIp = ''
+                                    }
+                                }
+                            }
+
+                            if (!ec2PublicIp || ec2PublicIp == 'null') {
+                                sh 'terraform output -raw ec2_public_ip'
+                                error('Unable to resolve EC2 public IP from Terraform output and AWS API.')
                             }
 
                             env.EC2_HOST = ec2PublicIp
