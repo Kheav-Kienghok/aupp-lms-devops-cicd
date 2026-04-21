@@ -121,13 +121,20 @@ pipeline {
                     credentialsId: "${AWS_CREDENTIALS}"
                 ]]) {
                     script {
-                        env.EC2_HOST = sh(
-                            script: 'cd infra/terraform && terraform output -raw ec2_public_ip',
+                        def ec2PublicIp = sh(
+                            script: 'cd infra/terraform && terraform output -raw ec2_public_ip || true',
+                            returnStdout: true
+                        ).trim()
+                        def ec2PublicDns = sh(
+                            script: 'cd infra/terraform && terraform output -raw ec2_public_dns || true',
                             returnStdout: true
                         ).trim()
 
+                        env.EC2_HOST = ec2PublicIp ?: ec2PublicDns
+
                         if (!env.EC2_HOST) {
-                            error('EC2 public IP not found.')
+                            sh 'cd infra/terraform && terraform output || true'
+                            error('EC2 host not found from Terraform outputs ec2_public_ip/ec2_public_dns.')
                         }
 
                         echo "EC2 Host: ${env.EC2_HOST}"
