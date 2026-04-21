@@ -152,13 +152,13 @@
       changed_when: false
       no_log: true
 
-    - name: Store Jenkins initial admin password in a text file
+    - name: Store Jenkins initial admin password locally
       ansible.builtin.copy:
         content: "{{ jenkins_initial_password.stdout }}\n"
-        dest: /var/lib/jenkins/initial-admin-password.txt
-        owner: jenkins
-        group: jenkins
+        dest: "./jenkins-initial-admin-password.txt"
         mode: "0600"
+      delegate_to: localhost
+      run_once: true
       no_log: true
 
 - name: Configure SonarQube server

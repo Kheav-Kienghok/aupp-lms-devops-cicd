@@ -18,7 +18,12 @@ pipeline {
 
         SONARQUBE_SERVER = 'sonarqube-server'
 
-        DOCKERHUB_CREDENTIALS = 'dockerhub-creds'
+        DOCKERHUB_USER = 'kienghok'
+        DOCKERHUB_PASSWORD = credentials('dockerhub-password')
+
+        AWS_CREDENTIALS = 'aws-credentials'
+        AWS_DEFAULT_REGION = 'us-east-1'
+
         EC2_HOST = ''
     }
 
@@ -33,9 +38,7 @@ pipeline {
         stage('SonarQube Scan') {
             steps {
                 withSonarQubeEnv("${SONARQUBE_SERVER}") {
-                    sh '''
-                        sonar-scanner
-                    '''
+                    sh 'sonar-scanner'
                 }
             }
         }
@@ -48,13 +51,12 @@ pipeline {
             }
         }
 
-        stage('Trivy Filesystem Scan') {
+        stage('Trivy FS Scan') {
             steps {
                 sh '''
-                    trivy fs \
-                      --severity CRITICAL,HIGH \
-                      --exit-code 1 \
-                      --no-progress .
+                    trivy fs --severity CRITICAL,HIGH \
+                             --exit-code 1 \
+                             --no-progress .
                 '''
             }
         }
@@ -70,62 +72,41 @@ pipeline {
         stage('Trivy Image Scan') {
             steps {
                 sh """
-                    trivy image \
-                      --severity CRITICAL,HIGH \
-                      --exit-code 1 \
-                      --no-progress ${IMAGE_NAME}:${IMAGE_TAG}
+                    trivy image --severity CRITICAL,HIGH \
+                                --exit-code 1 \
+                                --no-progress ${IMAGE_NAME}:${IMAGE_TAG}
                 """
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                script {
-                    docker.withRegistry('https://index.docker.io/v1/', "${DOCKERHUB_CREDENTIALS}") {
-                        docker.image("${IMAGE_NAME}:${IMAGE_TAG}").push()
-                        docker.image("${IMAGE_NAME}:${IMAGE_TAG}").push("latest")
+                sh '''
+                    echo "${DOCKERHUB_PASSWORD}" | docker login -u "${DOCKERHUB_USER}" --password-stdin
+                    docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                    docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
+                    docker push ${IMAGE_NAME}:latest
+                    docker logout
+                '''
+            }
+        }
+
+        stage('Terraform (Init → Apply)') {
+            steps {
+                withAWS(credentials: "${AWS_CREDENTIALS}", region: "${AWS_DEFAULT_REGION}") {
+                    dir('infra/terraform') {
+                        sh '''
+                            terraform init
+                            terraform validate
+                            terraform plan
+                            terraform apply -auto-approve
+                        '''
                     }
                 }
             }
         }
 
-        stage('Terraform Init') {
-            steps {
-                dir('infra/terraform') {
-                    sh 'terraform init'
-                }
-            }
-        }
-
-        stage('Terraform Validate') {
-            steps {
-                dir('infra/terraform') {
-                    sh 'terraform validate'
-                }
-            }
-        }
-
-        stage('Terraform Plan') {
-            steps {
-                dir('infra/terraform') {
-                    sh '''
-                        terraform plan
-                    '''
-                }
-            }
-        }
-
-        stage('Terraform Apply') {
-            steps {
-                dir('infra/terraform') {
-                    sh '''
-                        terraform apply -auto-approve
-                    '''
-                }
-            }
-        }
-
-        stage('Get EC2 Host From Terraform Output') {
+        stage('Get EC2 Host') {
             steps {
                 script {
                     env.EC2_HOST = sh(
@@ -134,10 +115,10 @@ pipeline {
                     ).trim()
 
                     if (!env.EC2_HOST) {
-                        error('Terraform output ec2_public_ip is empty.')
+                        error('EC2 public IP not found.')
                     }
 
-                    echo "EC2 host resolved from Terraform output: ${env.EC2_HOST}"
+                    echo "EC2 Host: ${env.EC2_HOST}"
                 }
             }
         }
@@ -151,10 +132,10 @@ pipeline {
                         ssh -o StrictHostKeyChecking=no ubuntu@${EC2_HOST} "
                             docker pull ${IMAGE_NAME}:${IMAGE_TAG}
                             docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
-                            
+
                             cd /home/ubuntu/deploy
-                            docker-compose down || true
-                            docker-compose up -d
+                            docker compose down || true
+                            docker compose up -d
                             docker ps
                         "
                     '''

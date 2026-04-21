@@ -152,9 +152,10 @@ resource "null_resource" "ansible_provision" {
     command = <<EOT
 ANSIBLE_HOST_KEY_CHECKING=False \
 ansible-playbook \
---private-key ${local.private_key_path} \
 -i ${path.module}/ansible/inventory.ini \
-${path.module}/ansible/playbooks/server.yml
+-v \
+${path.module}/ansible/playbooks/server.yml | tee ansible-provision.log && \
+echo "Ansible provisioning completed successfully"
 EOT
   }
 }
