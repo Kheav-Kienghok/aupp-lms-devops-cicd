@@ -120,20 +120,21 @@ pipeline {
                     $class: 'AmazonWebServicesCredentialsBinding',
                     credentialsId: "${AWS_CREDENTIALS}"
                 ]]) {
-                    script {
-                        def ec2PublicIp = sh(
-                            script: 'cd infra/terraform && terraform output -raw ec2_public_ip || true',
-                            returnStdout: true
-                        ).trim()
+                    dir('infra/terraform') {
+                        script {
+                            def ec2PublicIp = sh(
+                                script: 'terraform output -raw ec2_public_ip',
+                                returnStdout: true
+                            ).trim()
 
-                        env.EC2_HOST = ec2PublicIp
+                            if (!ec2PublicIp) {
+                                sh 'terraform output'
+                                error('Terraform output ec2_public_ip is empty.')
+                            }
 
-                        if (!env.EC2_HOST) {
-                            sh 'cd infra/terraform && terraform output || true'
-                            error('EC2 public IP not found from Terraform output ec2_public_ip.')
+                            env.EC2_HOST = ec2PublicIp
+                            echo "EC2 Host: ${env.EC2_HOST}"
                         }
-
-                        echo "EC2 Host: ${env.EC2_HOST}"
                     }
                 }
             }
