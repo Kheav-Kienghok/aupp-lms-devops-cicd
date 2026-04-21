@@ -29,6 +29,29 @@
           - docker.io
         state: present
 
+    - name: Download Trivy apt signing key
+      ansible.builtin.get_url:
+        url: https://aquasecurity.github.io/trivy-repo/deb/public.key
+        dest: /tmp/trivy-public.key
+        mode: "0644"
+
+    - name: Convert Trivy signing key to keyring format
+      ansible.builtin.command: gpg --dearmor -o /usr/share/keyrings/trivy.gpg /tmp/trivy-public.key
+      args:
+        creates: /usr/share/keyrings/trivy.gpg
+
+    - name: Add Trivy apt repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main"
+        filename: trivy
+        state: present
+
+    - name: Install Trivy
+      ansible.builtin.apt:
+        name: trivy
+        state: present
+        update_cache: true
+
     - name: Add Jenkins apt key
       ansible.builtin.get_url:
         url: https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key

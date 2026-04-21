@@ -68,3 +68,19 @@
       register: docker_compose_check
       changed_when: false
       failed_when: docker_compose_check.rc != 0
+
+    - name: Ensure deploy directory exists on Ubuntu
+      ansible.builtin.file:
+        path: /home/ubuntu/deploy
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: "0755"
+
+    - name: Copy deploy folder to Ubuntu
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../../deploy/"
+        dest: /home/ubuntu/deploy/
+        owner: ubuntu
+        group: ubuntu
+        mode: preserve
