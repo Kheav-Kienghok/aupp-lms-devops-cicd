@@ -76,11 +76,3 @@
         owner: ubuntu
         group: ubuntu
         mode: "0755"
-
-    - name: Copy deploy folder to Ubuntu
-      ansible.builtin.copy:
-        src: "{{ playbook_dir }}/../../../deploy/"
-        dest: /home/ubuntu/deploy/
-        owner: ubuntu
-        group: ubuntu
-        mode: preserve

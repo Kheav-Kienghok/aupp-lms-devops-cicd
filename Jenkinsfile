@@ -156,18 +156,18 @@ pipeline {
 
                     dir('infra/terraform') {
                         script {
-                            // 1. Run Terraform and save the IP to a temporary file
+                            // Run Terraform apply first.
                             sh """
                                 terraform init
                                 terraform apply -auto-approve --replace="module.compute.aws_instance.this"
-                                
-                                # Extract the IP and save it to a file named 'ip.txt'
-                                terraform output -raw ec2_public_ip > ip.txt
                             """
 
-                            // 2. Read the file content back into the Jenkins Environment
-                            env.INSTANCE_IP = readFile('infra/terraform/ip.txt').trim()
-                            env.EC2_HOST = env.INSTANCE_IP // Sync for your later stages
+                            // Capture output directly to avoid workspace path issues.
+                            env.INSTANCE_IP = sh(
+                                script: 'terraform output -raw ec2_public_ip',
+                                returnStdout: true
+                            ).trim()
+                            env.EC2_HOST = env.INSTANCE_IP
 
                             echo "✅ Captured IP from shell: ${env.INSTANCE_IP}"
                         }
@@ -183,21 +183,17 @@ pipeline {
             steps {
                 sshagent(credentials: ['ec2-ssh-key']) {
                     sh """
-                        scp -r -o StrictHostKeyChecking=no deploy ubuntu@${EC2_HOST}:/home/ubuntu/
+                        if [ ! -f infra/ansible/inventory.ini ]; then
+                            cat > infra/ansible/inventory.ini << 'EOF'
+[servers]
+app ansible_host=${EC2_HOST} ansible_user=ubuntu ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+EOF
+                        fi
 
-                        ssh -o StrictHostKeyChecking=no ubuntu@${EC2_HOST} '
-                            set -e
-
-                            cd /home/ubuntu/deploy
-
-                            docker pull ${IMAGE_FULL}
-                            docker tag ${IMAGE_FULL} ${IMAGE_NAME}:latest
-
-                            docker compose down || true
-                            docker compose up -d
-
-                            docker ps
-                        '
+                        ansible-playbook \
+                            -i infra/ansible/inventory.ini \
+                            infra/ansible/playbooks/deploy.yml \
+                            --extra-vars "image_full=${IMAGE_FULL} image_name=${IMAGE_NAME}"
                     """
                 }
             }
