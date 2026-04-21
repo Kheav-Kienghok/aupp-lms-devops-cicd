@@ -16,10 +16,18 @@ resource "aws_key_pair" "this" {
   }
 }
 
+resource "null_resource" "prepare_private_key_dir" {
+  provisioner "local-exec" {
+    command = "mkdir -p ${path.module}/secrets/ssh"
+  }
+}
+
 resource "local_sensitive_file" "private_key_pem" {
   content         = tls_private_key.ssh.private_key_pem
   filename        = local.private_key_path
   file_permission = "0600"
+
+  depends_on = [null_resource.prepare_private_key_dir]
 }
 
 locals {
@@ -38,7 +46,7 @@ locals {
 }
 
 locals {
-  private_key_path = "${path.module}/${var.key_name}.pem"
+  private_key_path = "${path.module}/secrets/ssh/${var.key_name}.pem"
 }
 
 resource "aws_security_group" "this" {

@@ -23,8 +23,10 @@
           - fontconfig
           - gnupg
           - openjdk-21-jre
+          - unzip
           - wget
           - python3-apt
+          - docker.io
         state: present
 
     - name: Add Jenkins apt key
@@ -51,6 +53,67 @@
         state: started
         enabled: true
 
+    - name: Download Terraform 1.14.3 archive
+      ansible.builtin.get_url:
+        url: https://releases.hashicorp.com/terraform/1.14.3/terraform_1.14.3_linux_amd64.zip
+        dest: /tmp/terraform_1.14.3_linux_amd64.zip
+        mode: "0644"
+
+    - name: Install Terraform 1.14.3
+      ansible.builtin.unarchive:
+        src: /tmp/terraform_1.14.3_linux_amd64.zip
+        dest: /usr/local/bin
+        remote_src: true
+        mode: "0755"
+
+    - name: Remove Terraform archive after installation
+      ansible.builtin.file:
+        path: /tmp/terraform_1.14.3_linux_amd64.zip
+        state: absent
+
+    - name: Download AWS CLI v2 archive
+      ansible.builtin.get_url:
+        url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+        dest: /tmp/awscliv2.zip
+        mode: "0644"
+
+    - name: Extract AWS CLI installer
+      ansible.builtin.unarchive:
+        src: /tmp/awscliv2.zip
+        dest: /tmp
+        remote_src: true
+
+    - name: Install AWS CLI v2
+      ansible.builtin.command: /tmp/aws/install
+      args:
+        creates: /usr/local/bin/aws
+
+    - name: Enable and start Docker
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Add ubuntu user to docker group
+      ansible.builtin.user:
+        name: ubuntu
+        groups: docker
+        append: true
+
+    - name: Add jenkins user to docker group
+      ansible.builtin.user:
+        name: jenkins
+        groups: docker
+        append: true
+
+    - name: Check Terraform version
+      ansible.builtin.command: terraform --version
+      changed_when: false
+
+    - name: Check AWS CLI version
+      ansible.builtin.command: aws --version
+      changed_when: false
+
     - name: Wait for Jenkins to finish starting
       ansible.builtin.uri:
         url: http://127.0.0.1:8080/login
@@ -64,10 +127,16 @@
       ansible.builtin.command: cat /var/lib/jenkins/secrets/initialAdminPassword
       register: jenkins_initial_password
       changed_when: false
+      no_log: true
 
-    - name: Show Jenkins initial admin password
-      ansible.builtin.debug:
-        msg: "Jenkins initial admin password: {{ jenkins_initial_password.stdout }}"
+    - name: Store Jenkins initial admin password in a text file
+      ansible.builtin.copy:
+        content: "{{ jenkins_initial_password.stdout }}\n"
+        dest: /var/lib/jenkins/initial-admin-password.txt
+        owner: jenkins
+        group: jenkins
+        mode: "0600"
+      no_log: true
 
 - name: Configure SonarQube server
   hosts: sonarqube

@@ -3,11 +3,6 @@ variable "name_prefix" {
   type        = string
 }
 
-variable "ami_id" {
-  description = "AMI ID for the EC2 instance"
-  type        = string
-}
-
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
@@ -15,6 +10,11 @@ variable "instance_type" {
 
 variable "key_name" {
   description = "AWS key pair name"
+  type        = string
+}
+
+variable "ami_id" {
+  description = "AMI ID to use for EC2 instances (set an AMI allowed by your organization policies)"
   type        = string
 }
 
