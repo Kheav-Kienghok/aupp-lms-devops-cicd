@@ -127,14 +127,11 @@ pipeline {
                                 --path=./ \
                                 --token=$SONAR_AUTH_TOKEN
 
-                            test -f generated-sonarqube-report.pdf
-
                             docker run --rm \
-                                -v \"$PWD\":/pdf \
+                                -v "$PWD":/pdf \
+                                -w /pdf \
                                 sergiomtzlosa/pdf2htmlex \
-                                pdf2htmlEX /pdf/generated-sonarqube-report.pdf /pdf/reports/sonar/generated-sonarqube-report.html
-
-                            test -f reports/sonar/generated-sonarqube-report.html
+                                pdf2htmlEX ./generated-sonarqube-report.pdf ./reports/sonar/generated-sonarqube-report.html
                         """
                     }
                 }
