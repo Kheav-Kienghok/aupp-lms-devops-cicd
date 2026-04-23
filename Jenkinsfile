@@ -228,18 +228,21 @@ pipeline {
             steps {
                 withCredentials([
                     [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "${AWS_CREDENTIALS}"],
-                    string(credentialsId: 'ec2-pem-content', variable: 'PEM_CONTENT')
+                    sshUserPrivateKey(
+                        credentialsId: 'ec2-pem-content',
+                        keyFileVariable: 'SSH_KEY_FILE',
+                        usernameVariable: 'SSH_USER'
+                    )
                 ]) {
                     dir('infra/terraform') {
-                        script {
-                            writeFile file: 'jenkins-temp-key.pem', text: env.PEM_CONTENT
-                        }
-
                         sh '''
-                            chmod 400 jenkins-temp-key.pem
+                            set -e
+                            chmod 400 "$SSH_KEY_FILE"
+
                             terraform init
                             terraform apply -auto-approve \
-                                -var="ssh_private_key_path=$(pwd)/jenkins-temp-key.pem"
+                                -var="ssh_private_key_path=$SSH_KEY_FILE" \
+                                -var="ssh_user=$SSH_USER"
                         '''
 
                         script {
@@ -248,10 +251,7 @@ pipeline {
                                 returnStdout: true
                             ).trim()
 
-                            env.ANSIBLE_INVENTORY = sh(
-                                script: "terraform output -raw ansible_inventory_path",
-                                returnStdout: true
-                            ).trim()
+                            env.ANSIBLE_INVENTORY = 'infra/ansible/inventory.ini'
                         }
                     }
                 }
@@ -263,11 +263,23 @@ pipeline {
          * --------------------------- */
         stage('Deploy to EC2') {
             steps {
-                sh """
-                    set -e
-                    ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i infra/ansible/inventory.ini infra/ansible/playbooks/deploy.yml \
-                        --extra-vars \"image_name=${IMAGE_NAME}:${IMAGE_TAG} image_full=${IMAGE_FULL}\"
-                """
+                withCredentials([sshUserPrivateKey(
+                    credentialsId: 'ec2-pem-content',
+                    keyFileVariable: 'SSH_KEY_FILE',
+                    usernameVariable: 'SSH_USER'
+                )]) {
+                    sh """
+                        set -e
+                        chmod 400 "\$SSH_KEY_FILE"
+
+                        ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook \\
+                            --private-key "\$SSH_KEY_FILE" \\
+                            -u "\$SSH_USER" \\
+                            -i infra/ansible/inventory.ini \\
+                            infra/ansible/playbooks/deploy.yml \\
+                            --extra-vars "image_repo=${IMAGE_NAME} image_tag=${IMAGE_TAG} image_full=${IMAGE_FULL}"
+                    """
+                }
             }
         }
 

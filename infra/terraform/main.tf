@@ -41,7 +41,6 @@ resource "local_file" "ansible_inventory" {
   content = templatefile("${path.module}/templates/inventory.ini.tftpl", {
     host             = module.compute.ec2_public_ip
     ssh_user         = var.ssh_user
-    private_key_path = abspath(var.ssh_private_key_path)
   })
   filename = "${path.module}/../ansible/inventory.ini"
 }
@@ -81,6 +80,6 @@ resource "null_resource" "ansible_provision" {
   }
 
   provisioner "local-exec" {
-    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook --private-key ${abspath(var.ssh_private_key_path)} -i ${local_file.ansible_inventory[0].filename} ${path.module}/ansible/playbooks/server.yml"
+    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook --private-key ${abspath(var.ssh_private_key_path)} -i ${local_file.ansible_inventory[0].filename} ${abspath("${path.module}/../ansible/playbooks/server.yml")}"
   }
 }

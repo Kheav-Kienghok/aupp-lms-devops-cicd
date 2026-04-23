@@ -29,7 +29,7 @@
       changed_when: true
 
     - name: Tag image as latest
-      ansible.builtin.command: "docker tag {{ image_full }} {{ image_name }}:latest"
+      ansible.builtin.command: "docker tag {{ image_full }} {{ image_repo }}:latest"
       changed_when: true
 
     - name: Restart services using Docker Compose V2
