@@ -14,42 +14,81 @@ The CI/CD pipeline is implemented using **Jenkins**, with integrations including
 - AWS EC2 (Deployment Target)
 - Prometheus + Grafana (Monitoring & Dashboard)
 
-Required Jenkins plugin for the SonarQube report step:
-
-- SonarQube Scanner plugin (`sonar`)
-
 ---
 
 ## Assignment Evidence Checklist
 
-Place the screenshots in this order so the submission reads naturally from collaboration to deployment and monitoring.
-
 ### 1. Source Control & Collaboration (GitHub)
 
-Capture the GitHub workflow first.
+#### GitHub Merge Conflict & Resolution Workflow
 
-1. GitHub Branches + Pull Request
-    - Show the feature branch, open PR, and source/target branches.
+Below is a step-by-step guide for handling merge conflicts when the main branch is locked. Each step includes a diagram for visual reference and a descriptive explanation.
 
-    branch main is lock so no one can push directly
-    Developer A have push some code 
-    Developer B change the code that Dev A that lead to conflict
+---
 
-    Required 1 approval to request
-    Merege Conflict 
-    Resolving conflict 
-    after resolve conflict
-    mereg to the main branch
+**1. Main branch is locked (no direct push allowed)**
 
+![Main branch locked](./images/devops_images_1.png)
 
+> The main branch is protected. Developers cannot push directly; all changes must go through Pull Requests (PRs).
 
-2. Reviewer Approval
-    - Show at least 1 reviewer approval on the PR.
-    - Place the screenshot directly after the PR screenshot.
+---
 
-3. Merge Conflict + Resolved
-    - Show the merge conflict first, then the resolved file or resolved PR diff.
-    - Place the screenshot under `1.4 Merge Conflict Demonstration & Resolution`.
+**2. Developer A pushes code (creates a PR)**
+
+![Developer A PR](./images/devops_images_2.png)
+
+> Developer A creates a PR to propose changes. The PR is now awaiting review and approval.
+
+---
+
+**3. PR requires 1 approval**
+
+![PR requires approval](./images/devops_images_6.png)
+
+> The repository is configured to require at least one approval before merging any PR into the main branch.
+
+---
+
+**4. Developer B changes the same code (creates another PR)**
+
+![Developer B PR](./images/devops_images_3.png)
+
+> Developer B also creates a PR, but modifies the same lines of code as Developer A, leading to a potential conflict.
+
+---
+
+**5. Merge conflict occurs**
+
+![Merge conflict](./images/devops_images_4.png)
+
+> When Developer B tries to merge, GitHub detects a merge conflict because both PRs modify the same lines.
+
+---
+
+**6. Resolving the conflict**
+
+![Resolve conflict](./images/devops_images_5.png)
+
+> Developer B (or another contributor) must resolve the conflict by editing the files to combine both changes appropriately.
+
+---
+
+**7. After resolving, update the PR**
+
+![Update PR after resolve](./images/devops_images_8.png)
+
+> After resolving the conflict, the PR is updated. It may require another review/approval.
+
+---
+
+**8. Merge to the main branch**
+
+![Merge to main](./images/devops_images_9.png)
+
+> Once the conflict is resolved and the PR is approved, it can be merged into the main branch.
+
+---
 
 ### 2. Continuous Integration (CI)
 
@@ -69,10 +108,6 @@ Capture the pipeline script and the quality/security results.
 
 ### 3. Infrastructure as Code (Terraform)
 
-1. Terraform
-    - Show `terraform init`, `terraform apply`, and the final EC2 public IP or instance ID.
-    - Place the screenshot under `6. Infrastructure as Code (Terraform)`.
-
     Dockerfile
     Docker build 
     server created using terraform and ansible to configure
@@ -84,9 +119,7 @@ Capture the pipeline script and the quality/security results.
 
 ### 5. Monitoring & Observability
 
-1. Grafana dashboard
- - Show dashboard panels such as CPU, memory, disk, or container health metrics.
- - Place the screenshot under `9.2 Grafana Dashboard`.
+    grafana monitoring
 
 ---
 
@@ -109,11 +142,11 @@ Capture the pipeline script and the quality/security results.
 ### Full DevOps Flow
 
 ```bash
-Developer → GitHub → Pull Request → Reviewer Approval 
-→ Merge Conflict Resolve → Merge to main  
-→ Jenkins Pipeline Runs → SonarQube Scan → Trivy Scan 
-→ Docker Build → Terraform Create EC2 → Deploy Docker Image 
-→ Access Application → Prometheus Monitoring → Grafana Dashboard
+    Developer → GitHub → Pull Request → Reviewer Approval 
+    → Merge Conflict Resolve → Merge to main  
+    → Jenkins Pipeline Runs → SonarQube Scan → Trivy Scan 
+    → Docker Build → Terraform Create EC2 → Deploy Docker Image 
+    → Access Application → Prometheus Monitoring → Grafana Dashboard
 ```
 
 ---
