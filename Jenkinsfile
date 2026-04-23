@@ -17,7 +17,7 @@ pipeline {
     parameters {
         string(
             name: 'SONAR_HOST_URL_OVERRIDE',
-            defaultValue: '',
+            defaultValue: 'http://3.208.3.185:9000',
             description: 'Optional SonarQube URL (only for report, leave empty to use Jenkins config)'
         )
     }
