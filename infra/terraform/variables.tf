@@ -19,17 +19,23 @@ variable "instance_type" {
 variable "ami_id" {
   description = "Amazon Linux 2023 or Ubuntu AMI ID"
   type        = string
-  default     = "ami-009d9173b44d0482b" # Update with the latest AMI ID for your region
+  default     = "ami-009d9173b44d0482b"
 }
 
 variable "key_name" {
-  description = "Name for the generated AWS key pair and local PEM file"
+  description = "Name for the new AWS key pair (only used when existing_key_pair_name is empty)"
   type        = string
   default     = "devop-final-key-1"
 }
 
+variable "existing_key_pair_name" {
+  description = "Name of an existing AWS key pair to reuse. Leave empty to auto-generate a new one."
+  type        = string
+  default     = ""
+}
+
 variable "my_ip_cidr" {
-  description = "Your public IP in CIDR format, example 1.2.3.4/32"
+  description = "Your public IP in CIDR format, e.g. 1.2.3.4/32"
   type        = string
   default     = "0.0.0.0/0"
 }
