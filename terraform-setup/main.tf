@@ -46,7 +46,7 @@ locals {
 }
 
 locals {
-  private_key_path = "${path.module}/secrets/ssh/${var.key_name}.pem"
+  private_key_path = abspath("${path.module}/secrets/ssh/${var.key_name}.pem")
 }
 
 resource "aws_security_group" "this" {

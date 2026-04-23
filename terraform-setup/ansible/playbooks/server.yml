@@ -163,24 +163,6 @@
         groups: docker
         append: true
 
-    - name: Ensure Jenkins SSH directory exists
-      ansible.builtin.file:
-        path: /var/lib/jenkins/.ssh
-        state: directory
-        owner: jenkins
-        group: jenkins
-        mode: "0700"
-
-    - name: Generate SSH key pair for Jenkins
-      ansible.builtin.openssh_keypair:
-        path: /var/lib/jenkins/.ssh/id_rsa
-        type: rsa
-        size: 4096
-        owner: jenkins
-        group: jenkins
-        mode: "0600"
-        force: false
-
     - name: Ensure Jenkins public SSH key is readable
       ansible.builtin.file:
         path: /var/lib/jenkins/.ssh/id_rsa.pub
