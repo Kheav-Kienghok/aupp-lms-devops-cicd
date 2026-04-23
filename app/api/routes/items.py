@@ -87,11 +87,12 @@ def update_item(
 
     if item_in.title is not None:
         cleaned_title = item_in.title.strip()
-        if not cleaned_title:
+        if len(cleaned_title) < 3:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Title cannot be empty"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Title must be at least 3 characters",
             )
-        item.title = cleaned_title
+        item.title = cleaned_title.title()
 
     if item_in.description is not None:
         cleaned_description = item_in.description.strip()
