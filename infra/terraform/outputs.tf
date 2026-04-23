@@ -11,5 +11,5 @@ output "ansible_inventory_path" {
 }
 
 output "private_key_path" {
-  value = local.private_key_path
+  value = var.ssh_private_key_path
 }

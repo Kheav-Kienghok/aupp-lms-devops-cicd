@@ -40,6 +40,18 @@ variable "ssh_user" {
   default     = "ubuntu"
 }
 
+variable "ssh_public_key_path" {
+  description = "Absolute path to the SSH public key on the Jenkins host"
+  type        = string
+  default     = "/var/lib/jenkins/.ssh/id_rsa.pub"
+}
+
+variable "ssh_private_key_path" {
+  description = "Absolute path to the SSH private key on the Jenkins host"
+  type        = string
+  default     = "/var/lib/jenkins/.ssh/id_rsa"
+}
+
 variable "provision_with_ansible" {
   description = "Run Ansible server provisioning after instance creation"
   type        = bool

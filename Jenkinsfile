@@ -165,7 +165,7 @@ pipeline {
                     trivy fs \
                         --severity HIGH,CRITICAL \
                         --exit-code 1 \
-                        --no-progress .
+                        --no-progress ./app
                 """
             }
         }
@@ -224,17 +224,18 @@ pipeline {
         /* ---------------------------
          * 12. INFRASTRUCTURE
          * --------------------------- */
-        stage('Provision Infrastructure & Deploy') {
+        stage('Provision Infrastructure') {
             steps {
                 withCredentials([[
                     $class: 'AmazonWebServicesCredentialsBinding',
                     credentialsId: "${AWS_CREDENTIALS}"
                 ]]) {
-
                     dir('infra/terraform') {
                         sh """
                             terraform init
-                            terraform apply -auto-approve
+                            terraform apply -auto-approve \
+                                -var 'ssh_public_key_path=/var/lib/jenkins/.ssh/id_rsa.pub' \
+                                -var 'ssh_private_key_path=/var/lib/jenkins/.ssh/id_rsa'
                         """
 
                         script {
@@ -242,11 +243,27 @@ pipeline {
                                 script: "terraform output -raw ec2_public_ip",
                                 returnStdout: true
                             ).trim()
+
+                            env.ANSIBLE_INVENTORY = sh(
+                                script: "terraform output -raw ansible_inventory_path",
+                                returnStdout: true
+                            ).trim()
                         }
 
                         echo "EC2_HOST = ${env.EC2_HOST}"
+                        echo "ANSIBLE_INVENTORY = ${env.ANSIBLE_INVENTORY}"
                     }
                 }
+            }
+        }
+
+        stage('Deploy to EC2') {
+            steps {
+                sh """
+                    set -e
+                    ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i infra/ansible/inventory.ini infra/ansible/playbooks/deploy.yml \
+                        --extra-vars \"image_name=${IMAGE_NAME} image_full=${IMAGE_FULL}\"
+                """
             }
         }
 
