@@ -30,7 +30,18 @@ Capture the GitHub workflow first.
 
 1. GitHub Branches + Pull Request
     - Show the feature branch, open PR, and source/target branches.
-    - Place the screenshot under `1.3 Pull Request & Reviewer Approval`.
+
+    branch main is lock so no one can push directly
+    Developer A have push some code 
+    Developer B change the code that Dev A that lead to conflict
+
+    Required 1 approval to request
+    Merege Conflict 
+    Resolving conflict 
+    after resolve conflict
+    mereg to the main branch
+
+
 
 2. Reviewer Approval
     - Show at least 1 reviewer approval on the PR.
@@ -44,48 +55,38 @@ Capture the GitHub workflow first.
 
 Capture the pipeline script and the quality/security results.
 
-4. Jenkins / GitHub Action full script
-    - Show the complete Jenkinsfile or workflow YAML with checkout, SonarQube, Trivy, Docker build, Terraform, and deploy stages.
-    - Place the screenshot under `2. Continuous Integration (CI) using Jenkins` or a dedicated `Jenkinsfile / Pipeline Script` subsection.
+1. Jenkins / GitHub Action full script
 
-5. SonarQube report
-    - Show the dashboard, quality gate, and main analysis results.
-    - Place the screenshot under `3. Code Quality Scan (SonarQube)`.
+    Jenkinsfile Script
+    Webhook with jenkins
+    Sonarqube report
 
-6. Trivy scan result
-    - Show the vulnerability scan output, especially any critical findings.
-    - Place the screenshot under `4. Security Scanning (Trivy)`.
-
-7. Quality Fail Pipeline Termination
-    - Show the pipeline stopping because SonarQube failed or Trivy found critical vulnerabilities.
-    - Place the screenshot under `10.2 Failed Pipeline Execution (Quality Gate / Trivy)`.
+    Quablity Gate only success to pass through
+        
+    Trivy Report
+        Filesystem
+        Docker image scan
 
 ### 3. Infrastructure as Code (Terraform)
 
-8. Terraform
+1. Terraform
     - Show `terraform init`, `terraform apply`, and the final EC2 public IP or instance ID.
     - Place the screenshot under `6. Infrastructure as Code (Terraform)`.
 
+    Dockerfile
+    Docker build 
+    server created using terraform and ansible to configure
+
 ### 4. Continuous Deployment (CD)
 
-9. Continuous Deployment
-    - Show the deployment logs where Jenkins copies or runs the container on EC2.
-    - Include the Docker socket permission step if you used it during deployment setup: `sudo chmod 666 /var/run/docker.sock`.
-    - Place the screenshot under `7. Continuous Deployment (CD)`.
-
-10. Pipeline success graphical
-    - Show the Jenkins pipeline view with all stages successful.
-    - Place the screenshot under `10.1 Successful Pipeline Execution`.
-
-11. Access running application from laptop
-    - Show your browser accessing the running app through the EC2 public IP or domain.
-    - Place the screenshot under `8. Application Access from Laptop`.
+    After CI success deploy the docker image to the server
+    test the server with curl to confirm it work fine
 
 ### 5. Monitoring & Observability
 
-12. Grafana dashboard
-	- Show dashboard panels such as CPU, memory, disk, or container health metrics.
-	- Place the screenshot under `9.2 Grafana Dashboard`.
+1. Grafana dashboard
+ - Show dashboard panels such as CPU, memory, disk, or container health metrics.
+ - Place the screenshot under `9.2 Grafana Dashboard`.
 
 ---
 
